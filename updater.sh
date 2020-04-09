@@ -48,6 +48,8 @@ if [ ! -f ".gear/$moduleName.watch" ]; then
 version=3
 http://tarballs.openstack.org/(.*)$moduleName/(.*)$moduleName-([\d.]+)\.tar\.gz
 EOF
+sed -i -E "s/(Source:.*)/\1\nSource1: $moduleName.watch/g" "$correctSpecLocation"
+echo "copy: .gear/$moduleName.watch" >> ".gear/rules"
 watchFileGenerated=1
 git add ".gear/$moduleName.watch"
 git commit -am "Added watch file"
