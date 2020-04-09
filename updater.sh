@@ -1,8 +1,20 @@
 #!/bin/bash -eu
 
+# 1. Clone git repo
+# 2. ? Rename spec file
+# 3. ? Creating watch file
+# 4. Download tarball
+# 5. Generate changelog
+# 6. Make upgrade
+# 7. Update build requires
+# 8. ???
+# 9. PROFIT!!!
+
 moduleName="$1"
 
-echo "*** Let's clone git repo ***"
+# 8<----------------------------------------------------------------------------
+
+echo "*** Cloning git repo ***"
 
 policyName=$(sed "s/^\(python3\?-\)\?/python-module-/" <<< $moduleName)
 policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $moduleName)
@@ -26,11 +38,13 @@ for possibleName in $possibleNames; do
     fi
 done
 
+# 8<----------------------------------------------------------------------------
+
 pushd "$moduleDir" > /dev/null
 moduleName=$(echo "$moduleDir" | rev | cut -f1 -d"/" | rev | sed -e "s/python3\?-module-\|openstack-//")
 cuttedModuleName=$(sed "s/^os[-_]//" <<< $moduleName)
 
-# Preprocessing of spec file before update
+# Renaming of spec file before update if nessesary
 specRenamed=0
 specFileLocation=$(find $moduleDir -name "*.spec")
 correctSpecLocation="$(dirname $specFileLocation)/$moduleName.spec"
@@ -40,6 +54,8 @@ if [ ! $specFileLocation == $correctSpecLocation ]; then
     git commit -am "Renamed spec file"
     specRenamed=1
 fi
+
+# 8<----------------------------------------------------------------------------
 
 watchFileGenerated=0
 if [ ! -f ".gear/$moduleName.watch" ]; then
@@ -55,11 +71,14 @@ git add ".gear/$moduleName.watch"
 git commit -am "Added watch file"
 fi
 
+# 8<----------------------------------------------------------------------------
+
 echo "*** Downloading source tarball ***"
 wget --quiet --show-progress $(grep "http" <<< $(rpm-uscan --no-verbose --skip-signature --report))
 
-tarball=$(find . -name "*.tar.gz")
-version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
+# 8<----------------------------------------------------------------------------
+
+echo "*** Generating changelog ***"
 
 changelogEntry="- Automatically updated to $version."
 if [ $watchFileGenerated == 1 ]; then
@@ -68,12 +87,19 @@ fi
 if [ $specRenamed == 1 ]; then
     changelogEntry=$changelogEntry"\n- Renamed spec file."
 fi
-
 changelogEntry=$(echo -e $changelogEntry)
 
+# 8<----------------------------------------------------------------------------
+
 echo "*** Updating repo ***"
+tarball=$(find . -name "*.tar.gz")
+version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 gear-uupdate -q "$tarball" "$version" --changelog "$changelogEntry"
 
+# 8<----------------------------------------------------------------------------
+
+echo "*** Updating build requires ***"
+# split BR each on own line
 sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:space:]]*>=[[:space:]]*?[0-9.]+)?)/BuildRequires: \2/g' "$correctSpecLocation"
 sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$correctSpecLocation"
 
@@ -89,6 +115,8 @@ cat "requirements.txt" | while read reqLine; do
     fi
 done
 popd > /dev/null
+
+# 8<----------------------------------------------------------------------------
 
 git commit -am "tmp"
 gear-commit -a --amend --no-edit
