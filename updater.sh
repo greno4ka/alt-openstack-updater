@@ -9,6 +9,11 @@ policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $moduleName)
 openstackName=$(sed "s/^/openstack-/" <<< $moduleName)
 possibleNames="$policyName $policyName3 $moduleName $openstackName"
 for possibleName in $possibleNames; do
+    if [ -d "$possibleName" ]; then
+        echo "$possibleName exists. Skip clonning."
+        moduleDir=$(pwd)/"$possibleName"
+        break
+    fi
     girar-get-upload-method "$possibleName" --no-output || packageExists="$?"
     if [ "$packageExists" -lt 4 ]; then
         echo "Cloning $possibleName"
