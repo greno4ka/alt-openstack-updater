@@ -30,6 +30,17 @@ pushd "$moduleDir" > /dev/null
 moduleName=$(echo "$moduleDir" | rev | cut -f1 -d"/" | rev | sed -e "s/python3\?-module-\|openstack-//")
 cuttedModuleName=$(sed "s/^os[-_]//" <<< $moduleName)
 
+# Preprocessing of spec file before update
+specRenamed=0
+specFileLocation=$(find $moduleDir -name "*.spec")
+correctSpecLocation="$(dirname $specFileLocation)/$moduleName.spec"
+if [ ! $specFileLocation == $correctSpecLocation ]; then
+    echo "*** Renaming spec file ***"
+    git mv $specFileLocation $correctSpecLocation
+    git commit -am "Renamed spec file"
+    specRenamed=1
+fi
+
 watchFileGenerated=0
 if [ ! -f ".gear/$moduleName.watch" ]; then
     echo "*** Creating watch file ***"
@@ -47,17 +58,6 @@ wget --quiet --show-progress $(grep "http" <<< $(rpm-uscan --no-verbose --skip-s
 
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
-
-# Preprocessing of spec file before update
-specRenamed=0
-specFileLocation=$(find $moduleDir -name "*.spec")
-correctSpecLocation="$(dirname $specFileLocation)/$moduleName.spec"
-if [ ! $specFileLocation == $correctSpecLocation ]; then
-    echo "*** Renaming spec file ***"
-    git mv $specFileLocation $correctSpecLocation
-    git commit -am "Renamed spec file"
-    specRenamed=1
-fi
 
 changelogEntry="- Automatically updated to $version."
 if [ $watchFileGenerated == 1 ]; then
