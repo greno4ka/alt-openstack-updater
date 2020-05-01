@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash -u
 
 # 1. Clone git repo
 # 2. ? Rename spec file
@@ -12,14 +12,74 @@
 
 moduleName="$1"
 
-# 8<----------------------------------------------------------------------------
-
-echo "*** Cloning git repo ***"
-
+#Sisyphus names' templates
 policyName=$(sed "s/^\(python3\?-\)\?/python-module-/" <<< $moduleName)
 policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $moduleName)
 openstackName=$(sed "s/^/openstack-/" <<< $moduleName)
-possibleNames="$policyName $policyName3 $moduleName $openstackName"
+sisyphusNames="$policyName $policyName3 $openstackName"
+
+# rsync -aP basalt-home:/space/ALT/Sisyphus/files/list/src.list .
+
+compareVersions() {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
+versionDiagnostics () {
+    compareVersions $1 $2
+    case $? in
+        0) echo "$3 is up-to-date!";;
+        1) echo "$3 is too new! $1 > $2";;
+        2) echo "$3 is outdated! $1 < $2";;
+    esac
+}
+
+
+sisyphusVersion=""
+for possibleName in $sisyphusNames; do
+if [ -z $sisyphusVersion ]; then
+    sisyphusVersion=$(grep "$possibleName[[:space:]]" src.list \
+    | cut -f2 | cut -d"-" -f1 | cut -d":" -f2 )
+fi
+done
+
+upstreamVersion=$(grep "^$moduleName[[:space:]]" lil | cut -d" " -f3)
+
+if [ -n "$sisyphusVersion" ]; then
+    versionDiagnostics "$sisyphusVersion" "$upstreamVersion" "$moduleName"
+fi
+
+exit 0
+
+# 8<----------------------------------------------------------------------------
+
+echo "*** Cloning git repo ***"
 for possibleName in $possibleNames; do
     if [ -d "$possibleName" ]; then
         echo "$possibleName exists. Skip clonning."
