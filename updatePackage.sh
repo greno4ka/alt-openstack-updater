@@ -54,24 +54,14 @@ fi
 
 # 8<----------------------------------------------------------------------------
 
-watchFileGenerated=0
-if [ ! -f ".gear/$moduleName.watch" ]; then
-    echo "*** Creating watch file ***"
-    cat <<EOF > ".gear/$moduleName.watch"
-version=3
-http://tarballs.openstack.org/$originalModuleName/$originalModuleName-([\d.]+)\.tar\.gz
-EOF
-sed -i -E "s/(Source:.*)/\1\nSource1: $moduleName.watch/g" "$correctSpecLocation"
-echo "copy: .gear/$moduleName.watch" >> ".gear/rules"
-watchFileGenerated=1
-git add ".gear/$moduleName.watch"
-git commit -am "Added watch file"
-fi
+#watchFileRemoved=0
+#find . -name "*.watch" -delete && watchFileRemoved=1
 
 # 8<----------------------------------------------------------------------------
 
 echo "*** Downloading source tarball ***"
-wget --quiet --show-progress $(grep "http" <<< $(rpm-uscan --no-verbose --skip-signature --report))
+wget --quiet --show-progress \
+    $(grep "$originalModuleName" ../scrapped.list | cut -d" " -f4)
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
@@ -80,9 +70,6 @@ version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 echo "*** Generating changelog ***"
 
 changelogEntry="- Automatically updated to $version."
-if [ $watchFileGenerated == 1 ]; then
-    changelogEntry=$changelogEntry"\n- Added watch file."
-fi
 if [ $specRenamed == 1 ]; then
     changelogEntry=$changelogEntry"\n- Renamed spec file."
 fi

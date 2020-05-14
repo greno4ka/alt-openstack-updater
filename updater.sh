@@ -3,15 +3,21 @@
 source versionDiagnostics.sh
 source updatePackage.sh
 
-originalModuleName="$1"
+release=$1
 
+rsync -aP basalt-home:/space/ALT/Sisyphus/files/list/src.list .
+
+#touch scrapped.list
+#for section in "library-projects" "service-projects" "service-client-projects"; do
+#    ./scrap.py $release $section >> scrapped.list
+#done
+
+for originalModuleName in $(cat scrapped.list | cut -d" " -f1); do
 #Sisyphus names' templates
 policyName=$(sed "s/^\(python3\?-\)\?/python-module-/" <<< $originalModuleName)
 policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $originalModuleName)
 openstackName=$(sed "s/^/openstack-/" <<< $originalModuleName)
 sisyphusNames="$policyName $policyName3 $openstackName"
-
-# rsync -aP basalt-home:/space/ALT/Sisyphus/files/list/src.list .
 
 sisyphusVersion=""
 for possibleName in $sisyphusNames; do
@@ -21,7 +27,7 @@ if [ -z $sisyphusVersion ]; then
 fi
 done
 
-upstreamVersion=$(grep "^$originalModuleName[[:space:]]" lol | cut -d" " -f3)
+upstreamVersion=$(grep "^$originalModuleName[[:space:]]" scrapped.list | cut -d" " -f3)
 
 if [ -n "$sisyphusVersion" ]; then
     versionDiagnostics "$sisyphusVersion" "$upstreamVersion" "$originalModuleName"
@@ -30,3 +36,7 @@ if [ -n "$sisyphusVersion" ]; then
         updatePackage "$originalModuleName" "$sisyphusNames"
     fi
 fi
+
+done
+
+#rm -f scrapped.list
