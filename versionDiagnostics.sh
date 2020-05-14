@@ -1,6 +1,9 @@
 #!/bin/bash -u
 
 compareVersions() {
+    # $1 - sisyphusVersion
+    # $2 - upstreamVersion
+
     if [[ $1 == $2 ]]
     then
         return 0
@@ -32,10 +35,14 @@ compareVersions() {
 }
 
 versionDiagnostics () {
+    # $1 - sisyphusVersion
+    # $2 - upstreamVersion
+    # $3 - moduleName
+
     compareVersions $1 $2
     case $? in
-        0) echo "$3 is up-to-date!";;
-        1) echo "$3 is too new! $1 > $2";;
-        2) echo "$3 is outdated! $1 < $2";;
+        0) echo "$3 is up-to-date!" ; return 0;;
+        1) echo "$3 is too new! $1 > $2" ; return 1;;
+        2) echo "$3 is outdated! $1 < $2" ; return 2;;
     esac
 }
