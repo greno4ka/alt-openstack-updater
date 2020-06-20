@@ -7,16 +7,18 @@ release=$1
 
 rsync -aP basalt-home:/space/ALT/Sisyphus/files/list/src.list .
 
-#touch scrapped.list
-#for section in "library-projects" "service-projects" "service-client-projects"; do
-#    ./scrap.py $release $section >> scrapped.list
-#done
+touch scrapped.list
+for section in "library-projects" "service-projects" "service-client-projects"; do
+    ./scrap.py $release $section >> scrapped.list
+done
 
 for originalModuleName in $(cat scrapped.list | cut -d" " -f1); do
+# oslo crutch
+fixedModuleName=$(sed "s/oslo-/oslo\./" <<< $originalModuleName)
 #Sisyphus names' templates
-policyName=$(sed "s/^\(python3\?-\)\?/python-module-/" <<< $originalModuleName)
-policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $originalModuleName)
-openstackName=$(sed "s/^/openstack-/" <<< $originalModuleName)
+policyName=$(sed "s/^\(python3\?-\)\?/python-module-/" <<< $fixedModuleName)
+policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $fixedModuleName)
+openstackName=$(sed "s/^/openstack-/" <<< $fixedModuleName)
 sisyphusNames="$policyName $policyName3 $openstackName"
 
 sisyphusVersion=""
@@ -39,4 +41,4 @@ fi
 
 done
 
-#rm -f scrapped.list
+rm -f scrapped.list

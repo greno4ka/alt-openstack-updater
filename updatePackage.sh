@@ -2,13 +2,12 @@
 
 # 1. Clone git repo
 # 2. ? Rename spec file
-# 3. ? Creating watch file
-# 4. Download tarball
-# 5. Generate changelog
-# 6. Make upgrade
-# 7. Update build requires
-# 8. ???
-# 9. PROFIT!!!
+# 3. Download tarball
+# 4. Generate changelog
+# 5. Make upgrade
+# 6. Update build requires
+# 7. ???
+# 8. PROFIT!!!
 
 updatePackage() {
     # $1 - originalModuleName
@@ -51,11 +50,6 @@ if [ ! $specFileLocation == $correctSpecLocation ]; then
     git commit -am "Renamed spec file"
     specRenamed=1
 fi
-
-# 8<----------------------------------------------------------------------------
-
-#watchFileRemoved=0
-#find . -name "*.watch" -delete && watchFileRemoved=1
 
 # 8<----------------------------------------------------------------------------
 
