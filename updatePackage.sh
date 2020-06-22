@@ -55,7 +55,7 @@ fi
 
 echo "*** Downloading source tarball ***"
 wget --quiet --show-progress \
-    $(grep "$originalModuleName" ../scrapped.list | cut -d" " -f4)
+    $(grep "^$originalModuleName " ../scrapped.list | cut -d" " -f4)
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
