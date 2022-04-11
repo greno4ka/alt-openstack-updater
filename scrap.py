@@ -13,12 +13,11 @@ html = urlopen('https://releases.openstack.org/'+ release +'/index.html')
 bsObj = BeautifulSoup(html, 'lxml')
 
 service_client_projects = bsObj.find(
-    'div',
+    'section',
     {
-        'class': 'section',
         'id': section,
     }
-).findAll('div', {'class': 'section'})
+).findAll('section')
 
 for project in service_client_projects:
     versions = [x.td.get_text() for x in project.tbody.findAll('tr')]
