@@ -16,10 +16,9 @@ for originalModuleName in $(cat scrapped.list | cut -d" " -f1); do
 # oslo crutch
 fixedModuleName=$(sed "s/oslo-/oslo\./" <<< $originalModuleName)
 #Sisyphus names' templates
-policyName=$(sed "s/^\(python3\?-\)\?/python-module-/" <<< $fixedModuleName)
 policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $fixedModuleName)
 openstackName=$(sed "s/^/openstack-/" <<< $fixedModuleName)
-sisyphusNames="$policyName $policyName3 $openstackName"
+sisyphusNames="$policyName3 $openstackName"
 
 sisyphusVersion=""
 for possibleName in $sisyphusNames; do
