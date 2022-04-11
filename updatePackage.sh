@@ -22,7 +22,8 @@ for possibleName in $sisyphusNames; do
         moduleDir=$(pwd)/"$possibleName"
         break
     fi
-    girar-get-upload-method "$possibleName" --no-output || packageExists="$?"
+    girar-get-upload-method "$possibleName" --no-output
+    packageExists="$?"
     if [ "$packageExists" -lt 4 ]; then
         echo "Cloning $possibleName"
         moduleDir=$(pwd)/"$possibleName"
