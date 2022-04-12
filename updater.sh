@@ -13,28 +13,29 @@ for section in "library-projects" "service-projects" "service-client-projects"; 
 done
 
 for theirModuleName in $(cat scrapped.list | cut -d" " -f1); do
+    # TODO: rename these packages!
     # oslo crutch
     fixedModuleName=$(sed "s/oslo-/oslo\./" <<< $theirModuleName)
     #Sisyphus names' templates
-    policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $fixedModuleName)
+    python3moduleName=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $fixedModuleName)
     openstackName=$(sed "s/^/openstack-/" <<< $fixedModuleName)
-    sisyphusNames="$policyName3 $openstackName"
 
-    sisyphusVersion=""
-    for possibleName in $sisyphusNames; do
-        if [ -z $sisyphusVersion ]; then
-            sisyphusVersion=$(grep "$possibleName[[:space:]]" src.list \
-            | cut -f2 | cut -d"-" -f1 | cut -d":" -f2 )
-        fi
-    done
 
-    upstreamVersion=$(grep "^$theirModuleName[[:space:]]" scrapped.list | cut -d" " -f3)
-    if [ -n "$sisyphusVersion" ]; then
-        versionDiagnostics "$sisyphusVersion" "$upstreamVersion" "$theirModuleName"
-        if [ $? == 2 ]; then
-            updatePackage "$theirModuleName" "$sisyphusNames"
-        fi
+    sisyphusName=""
+    grep "$python3moduleName" src.list && sisyphusName="$python3moduleName"
+    grep "$openstackName" src.list && sisyphusName="$openstackName"
+    if [ -z "$sisyphusName" ]; then
+        echo "$sisyphusName is not found in repo!"
+        continue
     fi
+
+    sisyphusVersion=$(grep "$sisyphusName[[:space:]]" src.list \
+            | cut -f2 | cut -d"-" -f1 | cut -d":" -f2 )
+    upstreamVersion=$(grep "^$theirModuleName[[:space:]]" scrapped.list | cut -d" " -f3)
+    versionDiagnostics "$sisyphusVersion" "$upstreamVersion" "$theirModuleName"
+        if [ $? == 2 ]; then
+            updatePackage "$theirModuleName" "$sisyphusName"
+        fi
 done
 
 rm -f scrapped.list

@@ -11,32 +11,34 @@
 
 updatePackage() {
     # $1 - theirModuleName
-    # $2 - sisyphusNames
-    theirModuleName=$1
-    sisyphusNames=$2
-
-echo "*** Cloning git repo ***"
-for possibleName in $sisyphusNames; do
-    if [ -d "$possibleName" ]; then
-        echo "$possibleName exists. Skip clonning."
-        moduleDir=$(pwd)/"$possibleName"
-        break
-    fi
-    girar-get-upload-method "$possibleName" --no-output
-    packageExists="$?"
-    if [ "$packageExists" -lt 4 ]; then
-        echo "Cloning $possibleName"
-        moduleDir=$(pwd)/"$possibleName"
-        if [ "$packageExists" = "3" ]; then
-            git clone --quiet git:/srpms/"${possibleName:0:1}"/"$possibleName"
-        else
-            git clone --quiet git:/gears/"${possibleName:0:1}"/"$possibleName"
-        fi
-    fi
-done
+    # $2 - sisyphusName
+    theirModuleName="$1"
+    sisyphusName="$2"
 
 # 8<----------------------------------------------------------------------------
+# 1. Clone git repo
 
+echo "*** Cloning git repo ***"
+if [ -d "$sisyphusName" ]; then
+    echo "$sisyphusName directory exists. Skip clonning."
+    break
+fi
+
+girar-get-upload-method "$sisyphusName" --no-output
+packageExists="$?"
+if [ "$packageExists" -lt 4 ]; then
+    echo "Cloning $sisyphusName..."
+    if [ "$packageExists" = "3" ]; then
+        git clone --quiet git:/srpms/"${sisyphusName:0:1}"/"$sisyphusName"
+    else # "$packageExists" = "0"
+        git clone --quiet git:/gears/"${sisyphusName:0:1}"/"$sisyphusName"
+    fi
+fi
+
+# 8<----------------------------------------------------------------------------
+# 2. Rename spec file
+
+moduleDir=$(pwd)/"$sisyphusName"
 pushd "$moduleDir" > /dev/null
 moduleName=$(echo "$moduleDir" | rev | cut -f1 -d"/" | rev | sed -e "s/python3\?-module-\|openstack-//")
 cuttedModuleName=$(sed "s/^os[-_]//" <<< $moduleName)
@@ -53,6 +55,7 @@ if [ ! $specFileLocation == $correctSpecLocation ]; then
 fi
 
 # 8<----------------------------------------------------------------------------
+# 3. Download tarball
 
 echo "*** Downloading source tarball ***"
 wget --quiet --show-progress \
@@ -61,6 +64,7 @@ tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
 # 8<----------------------------------------------------------------------------
+# 4. Generate changelog
 
 echo "*** Generating changelog ***"
 
@@ -71,11 +75,13 @@ fi
 changelogEntry=$(echo -e $changelogEntry)
 
 # 8<----------------------------------------------------------------------------
+# 5. Make upgrade
 
 echo "*** Updating repo ***"
 gear-uupdate -q "$tarball" "$version" --changelog "$changelogEntry"
 
 # 8<----------------------------------------------------------------------------
+# 6. Update build requires
 
 echo "*** Updating build requires ***"
 # split BR each on own line
