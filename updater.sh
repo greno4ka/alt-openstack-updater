@@ -8,7 +8,8 @@ release=$1
 rsync -aP basalt-home:/space/ALT/Sisyphus/files/list/src.list .
 
 touch scrapped.list
-for section in "library-projects" "service-projects" "service-client-projects"; do
+#for section in "library-projects" "service-projects" "service-client-projects"; do
+for section in "library-projects"; do
     ./scrap.py $release $section >> scrapped.list
 done
 
@@ -22,8 +23,8 @@ for theirModuleName in $(cat scrapped.list | cut -d" " -f1); do
 
 
     sisyphusName=""
-    grep "$python3moduleName" src.list && sisyphusName="$python3moduleName"
-    grep "$openstackName" src.list && sisyphusName="$openstackName"
+    sisyphusName=$(grep "$python3moduleName" src.list | cut -f1) ||
+    sisyphusName=$(grep "$openstackName" src.list | cut -f1) ||
     if [ -z "$sisyphusName" ]; then
         echo "$sisyphusName is not found in repo!"
         continue

@@ -89,8 +89,22 @@ sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:spa
 sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$correctSpecLocation"
 
 # git repo of modules always contains . .gear .git and our destination
-pushd "$(find -maxdepth 1 -type d | grep -v ".git" | \
-        grep -v ".gear" | grep "/")" > /dev/null
+sourceDir="$(find -maxdepth 1 -type d | grep -v ".git" | grep -v ".gear" | grep "/")"
+
+# Clean BuildRequires
+
+# Remove absolutely useless BuildRequires
+sed -i -E '/^BuildRequires: python3-devel/d' "$correctSpecLocation"
+sed -i -E '/^BuildRequires: python3-dev/d' "$correctSpecLocation"
+sed -i -E '/^BuildRequires: python3-module-setuptools/d' "$correctSpecLocation"
+
+for buildRequirementLine in $(grep "BuildRequires:" "$correctSpecLocation"); do
+    buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
+    grep -r "import.*$buildRequirement" $sourceDir || \
+        grep -r "from.*$buildRequirement.*import" $sourceDir || \
+        sed -i -E "/$buildRequirementLine/d" "$correctSpecLocation"
+done
+
 cat "requirements.txt" | while read reqLine; do
     if [[ "$reqLine" =~ ">" ]]; then
         reqName=$(tr [:upper:] [:lower:] <<< \
@@ -106,9 +120,9 @@ popd > /dev/null
 git commit -am "tmp"
 gear-commit -a --amend --no-edit
 srpmName=$(gear-rpm -bs --nodeps | cut -d":" -f2)
-rpm --addsign $srpmName
-rsync -aP $srpmName gyle:
-git clean -fdx
+#rpm --addsign $srpmName
+#rsync -aP $srpmName gyle:
+#git clean -fdx
 popd > /dev/null
 
 }
