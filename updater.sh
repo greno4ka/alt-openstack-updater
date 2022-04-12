@@ -12,9 +12,9 @@ for section in "library-projects" "service-projects" "service-client-projects"; 
     ./scrap.py $release $section >> scrapped.list
 done
 
-for originalModuleName in $(cat scrapped.list | cut -d" " -f1); do
+for theirModuleName in $(cat scrapped.list | cut -d" " -f1); do
     # oslo crutch
-    fixedModuleName=$(sed "s/oslo-/oslo\./" <<< $originalModuleName)
+    fixedModuleName=$(sed "s/oslo-/oslo\./" <<< $theirModuleName)
     #Sisyphus names' templates
     policyName3=$(sed "s/^\(python3\?-\)\?/python3-module-/" <<< $fixedModuleName)
     openstackName=$(sed "s/^/openstack-/" <<< $fixedModuleName)
@@ -28,11 +28,11 @@ for originalModuleName in $(cat scrapped.list | cut -d" " -f1); do
         fi
     done
 
-    upstreamVersion=$(grep "^$originalModuleName[[:space:]]" scrapped.list | cut -d" " -f3)
+    upstreamVersion=$(grep "^$theirModuleName[[:space:]]" scrapped.list | cut -d" " -f3)
     if [ -n "$sisyphusVersion" ]; then
-        versionDiagnostics "$sisyphusVersion" "$upstreamVersion" "$originalModuleName"
+        versionDiagnostics "$sisyphusVersion" "$upstreamVersion" "$theirModuleName"
         if [ $? == 2 ]; then
-            updatePackage "$originalModuleName" "$sisyphusNames"
+            updatePackage "$theirModuleName" "$sisyphusNames"
         fi
     fi
 done

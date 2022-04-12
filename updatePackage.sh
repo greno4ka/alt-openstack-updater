@@ -10,9 +10,9 @@
 # 8. PROFIT!!!
 
 updatePackage() {
-    # $1 - originalModuleName
+    # $1 - theirModuleName
     # $2 - sisyphusNames
-    originalModuleName=$1
+    theirModuleName=$1
     sisyphusNames=$2
 
 echo "*** Cloning git repo ***"
@@ -56,7 +56,7 @@ fi
 
 echo "*** Downloading source tarball ***"
 wget --quiet --show-progress \
-    $(grep "^$originalModuleName " ../scrapped.list | cut -d" " -f4)
+    $(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
