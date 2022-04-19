@@ -85,7 +85,7 @@ gear-uupdate -q "$tarball" "$version" --changelog "$changelogEntry"
 
 echo "*** Updating build requires ***"
 # split BR each on own line
-sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:space:]]*>=[[:space:]]*?[0-9.]+)?)/BuildRequires: \2/g' "$correctSpecLocation"
+sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:space:]]*>=?[[:space:]]*?[0-9.]+)?)/BuildRequires: \2/g' "$correctSpecLocation"
 sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$correctSpecLocation"
 
 # git repo of modules always contains . .gear .git and our destination
