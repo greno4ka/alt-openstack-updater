@@ -91,18 +91,35 @@ sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$correctSpecLocation"
 # git repo of modules always contains . .gear .git and our destination
 sourceDir="$(find -maxdepth 1 -type d | grep -v ".git" | grep -v ".gear" | grep "/")"
 
-# Clean BuildRequires
+# Verify BuildRequires
 
 # Remove absolutely useless BuildRequires
 sed -i -E '/^BuildRequires: python3-devel/d' "$correctSpecLocation"
 sed -i -E '/^BuildRequires: python3-dev/d' "$correctSpecLocation"
 sed -i -E '/^BuildRequires: python3-module-setuptools/d' "$correctSpecLocation"
 
-for buildRequirementLine in $(grep "BuildRequires:" "$correctSpecLocation"); do
+# Rewrite build requires in normal mode
+grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; do
     buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
-    grep -r "import.*$buildRequirement" $sourceDir || \
-        grep -r "from.*$buildRequirement.*import" $sourceDir || \
-        sed -i -E "/$buildRequirementLine/d" "$correctSpecLocation"
+
+    if [ $(echo "$buildRequirement" | grep python3-module-) ]; then
+        noarchPath=/space/ALT/Sisyphus/noarch/RPMS.classic/$buildRequirement-[0123456789]*
+        x86_64Path=/space/ALT/Sisyphus/x86_64/RPMS.classic/$buildRequirement-[0123456789]*
+        [ -f $noarchPath ] && rpmPath=$noarchPath
+        [ -f $x86_64Path ] && rpmPath=$x86_64Path
+        buildReqNormalized=$(rpm -q --provides -p $rpmPath | sort -u | \
+            grep -v python3-module- | head -n1)
+        [ -n "$buildReqNormalized" ] && \
+            sed -i -E "s/$buildRequirement([[:space:]]|$)/$buildReqNormalized\1/" "$correctSpecLocation"
+    fi
+
+git commit -am "tmp"
+
+
+
+#    grep -r "import.*$buildRequirement" $sourceDir || \
+#        grep -r "from.*$buildRequirement.*import" $sourceDir || \
+#        sed -i -E "/$buildRequirementLine/d" "$correctSpecLocation"
 done
 
 cat "requirements.txt" | while read reqLine; do
