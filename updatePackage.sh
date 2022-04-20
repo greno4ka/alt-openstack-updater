@@ -112,22 +112,21 @@ grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; 
         [ -n "$buildReqNormalized" ] && \
             sed -i -E "s/$buildRequirement([[:space:]]|$)/$buildReqNormalized\1/" "$correctSpecLocation"
     fi
+done
 
 git commit -am "tmp"
 
+# Clean extra build requires
 
+grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; do
+    buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
 
-#    grep -r "import.*$buildRequirement" $sourceDir || \
-#        grep -r "from.*$buildRequirement.*import" $sourceDir || \
-#        sed -i -E "/$buildRequirementLine/d" "$correctSpecLocation"
-done
-
-cat "requirements.txt" | while read reqLine; do
-    if [[ "$reqLine" =~ ">" ]]; then
-        reqName=$(tr [:upper:] [:lower:] <<< \
-            $(echo "$reqLine" | cut -d"!" -f1 | cut -d">" -f1))
-        reqVersion=$(sed -nE "s/$reqName[^ ;]*>=?([0-9.]+).*/\1/p" <<< $reqLine)
-        [ -z $reqVersion ] || sed -Ei "s/(python3?-module-$reqName)([[:space:]]|$).*/\1 >= $reqVersion/" "$correctSpecLocation"
+    if [ ! $(echo "$buildRequirement" | grep python3-module-) ]; then
+        moduleRequirement=$(echo $buildRequirement | sed -E 's/python3\((.*)\)/\1/')
+        [ ! $(find . -name '*.py' | \
+            xargs grep "import.* $moduleRequirement\|from.* $moduleRequirement.*import") ] \
+        && [ ! $(find . -name '*.ini' | xargs grep "$moduleRequirement") ] && \
+            sed -i "/$buildRequirementLine/d" "$correctSpecLocation"
     fi
 done
 popd > /dev/null
