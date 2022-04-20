@@ -98,7 +98,6 @@ sed -i -E '/^BuildRequires: python3-devel/d' "$correctSpecLocation"
 sed -i -E '/^BuildRequires: python3-dev/d' "$correctSpecLocation"
 sed -i -E '/^BuildRequires: python3-module-setuptools/d' "$correctSpecLocation"
 
-# Rewrite build requires in normal mode
 grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; do
     buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
 
@@ -109,23 +108,16 @@ grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; 
         [ -f $x86_64Path ] && rpmPath=$x86_64Path
         buildReqNormalized=$(rpm -q --provides -p $rpmPath | sort -u | \
             grep -v python3-module- | head -n1)
+# Rewrite build requires in normal mode (off)
+        [ -z "x" ] && \
         [ -n "$buildReqNormalized" ] && \
             sed -i -E "s/$buildRequirement([[:space:]]|$)/$buildReqNormalized\1/" "$correctSpecLocation"
-    fi
-done
 
-git commit -am "tmp"
-
-# Clean extra build requires
-
-grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; do
-    buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
-
-    if [ ! $(echo "$buildRequirement" | grep python3-module-) ]; then
-        moduleRequirement=$(echo $buildRequirement | sed -E 's/python3\((.*)\)/\1/')
+        moduleRequirement=$(echo $buildReqNormalized | sed -E 's/python3\((.*)\)/\1/')
+# Filter useless extra build requires
         [ ! $(find . -name '*.py' | \
             xargs grep "import.* $moduleRequirement\|from.* $moduleRequirement.*import") ] \
-        && [ ! $(find . -name '*.ini' | xargs grep "$moduleRequirement") ] && \
+        && [ ! $(find . -name '*.ini' -o -name 'conf.py' -o -name 'setup.py' | xargs grep "$moduleRequirement") ] && \
             sed -i "/$buildRequirementLine/d" "$correctSpecLocation"
     fi
 done
