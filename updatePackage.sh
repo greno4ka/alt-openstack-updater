@@ -88,9 +88,6 @@ echo "*** Updating build requires ***"
 sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:space:]]*>=?[[:space:]]*?[0-9.]+)?)/BuildRequires: \2/g' "$correctSpecLocation"
 sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$correctSpecLocation"
 
-# git repo of modules always contains . .gear .git and our destination
-sourceDir="$(find -maxdepth 1 -type d | grep -v ".git" | grep -v ".gear" | grep "/")"
-
 # Verify BuildRequires
 
 # Remove absolutely useless BuildRequires
@@ -101,7 +98,7 @@ sed -i -E '/^BuildRequires: python3-module-setuptools/d' "$correctSpecLocation"
 grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; do
     buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
 
-    if [ $(echo "$buildRequirement" | grep python3-module-) ]; then
+    if [ $(echo "$buildRequirement" | grep -c python3-module-) ]; then
         noarchPath=/space/ALT/Sisyphus/noarch/RPMS.classic/$buildRequirement-[0123456789]*
         x86_64Path=/space/ALT/Sisyphus/x86_64/RPMS.classic/$buildRequirement-[0123456789]*
         [ -f $noarchPath ] && rpmPath=$noarchPath
@@ -115,13 +112,56 @@ grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; 
 
         moduleRequirement=$(echo $buildReqNormalized | sed -E 's/python3\((.*)\)/\1/')
 # Filter useless extra build requires
-        [ ! $(find . -name '*.py' | \
-            xargs grep "import.* $moduleRequirement\|from.* $moduleRequirement.*import") ] \
-        && [ ! $(find . -name '*.ini' -o -name 'conf.py' -o -name 'setup.py' | xargs grep "$moduleRequirement") ] && \
+        [ $(find . -name '*.py' | \
+            xargs grep "import.* $moduleRequirement\|from.* $moduleRequirement.*import" | wc -l) == 0 ] \
+        && [ $(find . -name '*.ini' -o -name 'conf.py' -o -name 'setup.py' | \
+        xargs grep "$moduleRequirement" | wc -l) == 0 ] && \
             sed -i "/$buildRequirementLine/d" "$correctSpecLocation"
     fi
 done
-popd > /dev/null
+
+# git repo of modules always contains . .gear .git and our destination
+sourceDir="$(find -maxdepth 1 -type d | grep -v ".git" | grep -v ".gear" | grep "/")"
+
+cat "$sourceDir/requirements.txt" "$sourceDir/test-requirements.txt" | while read reqLine; do
+    if [[ "$reqLine" =~ ">" ]] && [ ! $(echo $reqLine | grep -q "^#" && echo $?) ]; then
+        reqName=$(tr [:upper:] [:lower:] <<< \
+            $(echo "$reqLine" | cut -d"!" -f1 | cut -d">" -f1))
+        if [ ! $(grep -q python3-module-$reqName "$correctSpecLocation" && echo $?) ]; then
+        # Count line number to input new build requirement
+            brStarted=""
+            lineNumber=0
+            cooldownFlag=2
+            while read line; do
+            if [ -z "$brStarted" ] && [ ! $(echo $line | grep -q 'BuildRequires:' && echo $?) ]; then
+                echo "Skip first strings" > /dev/null
+            elif [ -z "$brStarted" ] && [ $(echo $line | grep -q 'BuildRequires:' && echo $?) ]; then
+                brStarted="x"
+            elif [ "$brStarted" == "x" ] && [ $(echo $line | grep -q 'BuildRequires:' && echo $?) ]; then
+                cooldownFlag=2
+            elif [ "$brStarted" == "x" ] && [ $cooldownFlag -gt 0 ] && [ ! "$(echo $line | grep -q 'BuildRequires:' && echo $?)" ] ; then
+                let "cooldownFlag-=1"
+            else
+                break
+            fi
+
+            let "lineNumber+=1"
+            echo ${lineNumber}
+            done < "$correctSpecLocation"
+
+            let "lineNumber-=2"
+
+            noarchPath=/space/ALT/Sisyphus/noarch/RPMS.classic/python3-module-$reqName-[0123456789]*
+            x86_64Path=/space/ALT/Sisyphus/x86_64/RPMS.classic/python3-module-$reqName-[0123456789]*
+
+            if [ -f $noarchPath -o -f $x86_64Path ]; then
+                sed -Ei "${lineNumber}aBuildRequires: python3-module-$reqName" "$correctSpecLocation"
+            fi
+        fi
+        reqVersion=$(sed -nE "s/$reqName[^ ;]*>=?([0-9.]+).*/\1/p" <<< $reqLine)
+        [ -z $reqVersion ] || sed -Ei "s/(python3-module-$reqName)([[:space:]]|$).*/\1 >= $reqVersion/" "$correctSpecLocation"
+    fi
+done
 
 # 8<----------------------------------------------------------------------------
 
