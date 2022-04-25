@@ -26,7 +26,7 @@ for theirModuleName in $(cat scrapped.list | cut -d" " -f1); do
     sisyphusName=$(grep "$openstackName" src.list | cut -f1) ||
     sisyphusName=""
     if [ -z "$sisyphusName" ]; then
-        echo "$sisyphusName is not found in repo!"
+        echo "$theirModuleName is not found in repo!"
         continue
     fi
 
