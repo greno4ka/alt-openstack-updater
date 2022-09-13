@@ -58,11 +58,13 @@ fi
 
 echo "*** Downloading source tarball ***"
 tarballUrl=$(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
-
-echo "version=3" > $moduleName.watch
-echo $tarballUrl | sed -E 's/[0-9]+(\.[0-9]+)*/(\\d[[:digit:].]+)/' >> $moduleName.watch
+if [ -f "$moduleName.watch" ]; then
+    echo "Watch file exist!"
+else
+    echo "version=3" > $moduleName.watch
+    echo $tarballUrl | sed -E 's/[0-9]+(\.[0-9]+)*/(\\d[[:digit:].]+)/' >> $moduleName.watch
+fi
 rpm-uscan
-#wget --quiet --show-progress $tarballUrl
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
