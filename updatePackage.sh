@@ -21,17 +21,16 @@ updatePackage() {
 echo "*** Cloning git repo ***"
 if [ -d "$sisyphusName" ]; then
     echo "$sisyphusName directory exists. Skip clonning."
-    break
-fi
-
-girar-get-upload-method "$sisyphusName" --no-output
-packageExists="$?"
-if [ "$packageExists" -lt 4 ]; then
-    echo "Cloning $sisyphusName..."
-    if [ "$packageExists" = "3" ]; then
-        git clone --quiet git:/srpms/"${sisyphusName:0:1}"/"$sisyphusName"
-    else # "$packageExists" = "0"
-        git clone --quiet git:/gears/"${sisyphusName:0:1}"/"$sisyphusName"
+else
+    girar-get-upload-method "$sisyphusName" --no-output
+    packageExists="$?"
+    if [ "$packageExists" -lt 4 ]; then
+        echo "Cloning $sisyphusName..."
+        if [ "$packageExists" = "3" ]; then
+            git clone --quiet git:/srpms/"${sisyphusName:0:1}"/"$sisyphusName"
+        else # "$packageExists" = "0"
+            git clone --quiet git:/gears/"${sisyphusName:0:1}"/"$sisyphusName"
+        fi
     fi
 fi
 
