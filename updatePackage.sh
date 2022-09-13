@@ -58,8 +58,12 @@ fi
 # 3. Download tarball
 
 echo "*** Downloading source tarball ***"
-wget --quiet --show-progress \
-    $(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
+tarballUrl=$(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
+
+echo "version=3" > $moduleName.watch
+echo $tarballUrl | sed -E 's/[0-9]+(\.[0-9]+)*/(\\d[[:digit:].]+)/' >> $moduleName.watch
+rpm-uscan
+#wget --quiet --show-progress $tarballUrl
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
