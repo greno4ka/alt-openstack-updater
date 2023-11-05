@@ -98,11 +98,9 @@ sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$correctSpecLocation"
 # Remove absolutely useless BuildRequires
 sed -i -E '/^BuildRequires: python3-devel/d' "$correctSpecLocation"
 sed -i -E '/^BuildRequires: python3-dev/d' "$correctSpecLocation"
-sed -i -E '/^BuildRequires: python3-module-setuptools/d' "$correctSpecLocation"
 
 grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; do
     buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
-
     if [ $(echo "$buildRequirement" | grep -c python3-module-) ]; then
         noarchPath=/space/ALT/Sisyphus/noarch/RPMS.classic/$buildRequirement-[0123456789]*
         x86_64Path=/space/ALT/Sisyphus/x86_64/RPMS.classic/$buildRequirement-[0123456789]*
@@ -124,6 +122,9 @@ grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; 
             sed -i "/$buildRequirementLine/d" "$correctSpecLocation"
     fi
 done
+
+# Bring back setuptools and wheel, as they are nessesary for new macros
+sed -i "s,BuildRequires(pre): rpm-build-python3,BuildRequires(pre): rpm-build-python3\nBuildRequires: python3-module-setuptools\nBuildRequires: python3-module-wheel," $correctSpecLocation
 
 # git repo of modules always contains . .gear .git and our destination
 sourceDir="$(find -maxdepth 1 -type d | grep -v ".git" | grep -v ".gear" | grep "/")"
