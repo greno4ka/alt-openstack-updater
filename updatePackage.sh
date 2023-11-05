@@ -9,9 +9,7 @@
 # 8. PROFIT!!!
 
 updatePackage() {
-    # $1 - theirModuleName
-    # $2 - sisyphusName
-    theirModuleName="$1"
+    theirModuleName="$1" # Can be None, if we want to use watch file
     sisyphusName="$2"
 
 # 8<----------------------------------------------------------------------------
@@ -41,14 +39,11 @@ specFileLocation=$(find $moduleDir -name "*.spec")
 # 3. Download tarball
 
 echo "*** Downloading source tarball ***"
-if [ -f "$moduleName.watch" ]; then
-    echo "Watch file exist!"
+if [ $theirModuleName == "None" ]; then
+    rpm-uscan
 else
     tarballUrl=$(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
-    echo "version=3" > $moduleName.watch
-    echo $tarballUrl | sed -E 's/[0-9]+(\.[0-9]+)*/(\\d[[:digit:].]+)/' >> $moduleName.watch
 fi
-rpm-uscan
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
