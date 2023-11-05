@@ -21,8 +21,8 @@ for theirModuleName in $(cat scrapped.list | cut -d" " -f1); do
     openstackName=$(sed "s/^/openstack-/" <<< $fixedModuleName)
 
 
-    sisyphusName=$(grep "$python3moduleName" src.list | cut -f1) ||
-    sisyphusName=$(grep "$openstackName" src.list | cut -f1) ||
+    sisyphusName=$(grep "$python3moduleName[[:space:]]" src.list | cut -f1) ||
+    sisyphusName=$(grep "$openstackName[[:space:]]" src.list | cut -f1) ||
     sisyphusName=""
     if [ -z "$sisyphusName" ]; then
         echo "$theirModuleName is not found in repo!"
