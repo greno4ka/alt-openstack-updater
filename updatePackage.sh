@@ -1,12 +1,11 @@
 #!/bin/bash -u
 
 # 1. Clone git repo
-# 3. Download tarball
-# 4. Generate changelog
-# 5. Make upgrade
-# 6. Update build requires
-# 7. ???
-# 8. PROFIT!!!
+# 2. Download tarball
+# 3. Make upgrade
+# 4. Update build requires
+# 5. ???
+# 6. PROFIT!!!
 
 updatePackage() {
     theirModuleName="$1" # Can be None, if we want to use watch file
@@ -36,7 +35,7 @@ pushd "$moduleDir" > /dev/null
 specFileLocation=$(find $moduleDir -name "*.spec")
 
 # 8<----------------------------------------------------------------------------
-# 3. Download tarball
+# 2. Download tarball
 
 echo "*** Downloading source tarball ***"
 if [ $theirModuleName == "None" ]; then
@@ -48,24 +47,14 @@ tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
 
 # 8<----------------------------------------------------------------------------
-# 4. Generate changelog
-
-echo "*** Generating changelog ***"
-
-changelogEntry="- Automatically updated to $version."
-if [ $specRenamed == 1 ]; then
-    changelogEntry=$changelogEntry"\n- Renamed spec file."
-fi
-changelogEntry=$(echo -e $changelogEntry)
-
-# 8<----------------------------------------------------------------------------
-# 5. Make upgrade
+# 3. Make upgrade
 
 echo "*** Updating repo ***"
+changelogEntry="- Automatically updated to $version."
 gear-uupdate -q "$tarball" "$version" --changelog "$changelogEntry"
 
 # 8<----------------------------------------------------------------------------
-# 6. Update build requires
+# 4. Update build requires
 
 echo "*** Updating build requires ***"
 # split BR each on own line
@@ -73,7 +62,6 @@ sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:spa
 sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$specLocation"
 
 # Verify BuildRequires
-
 # Remove absolutely useless BuildRequires
 sed -i -E '/^BuildRequires: python3-devel/d' "$specLocation"
 sed -i -E '/^BuildRequires: python3-dev/d' "$specLocation"
@@ -87,13 +75,13 @@ grep "BuildRequires:" "$specLocation" | while read buildRequirementLine; do
         [ -f $x86_64Path ] && rpmPath=$x86_64Path
         buildReqNormalized=$(rpm -q --provides -p $rpmPath | sort -u | \
             grep -v python3-module- | head -n1)
-# Rewrite build requires in normal mode (off)
+        # Rewrite build requires in normal mode (off)
         [ -z "x" ] && \
         [ -n "$buildReqNormalized" ] && \
             sed -i -E "s/$buildRequirement([[:space:]]|$)/$buildReqNormalized\1/" "$specLocation"
 
         moduleRequirement=$(echo $buildReqNormalized | sed -E 's/python3\((.*)\)/\1/')
-# Filter useless extra build requires
+        # Filter useless extra build requires
         [ $(find . -name '*.py' | \
             xargs grep "import.* $moduleRequirement\|from.* $moduleRequirement.*import" | wc -l) == 0 ] \
         && [ $(find . -name '*.ini' -o -name 'conf.py' -o -name 'setup.py' | \
@@ -108,6 +96,7 @@ sed -i "s,BuildRequires(pre): rpm-build-python3,BuildRequires(pre): rpm-build-py
 # git repo of modules always contains . .gear .git and our destination
 sourceDir="$(find -maxdepth 1 -type d | grep -v ".git" | grep -v ".gear" | grep "/")"
 
+# This part of code brings new build requirements in the end of file, if they can be found
 cat "$sourceDir/requirements.txt" "$sourceDir/test-requirements.txt" | while read reqLine; do
     if [[ "$reqLine" =~ ">" ]] && [ ! $(echo $reqLine | grep -q "^#" && echo $?) ]; then
         reqName=$(tr [:upper:] [:lower:] <<< \
@@ -129,11 +118,8 @@ cat "$sourceDir/requirements.txt" "$sourceDir/test-requirements.txt" | while rea
             else
                 break
             fi
-
             let "lineNumber+=1"
-            echo ${lineNumber}
             done < "$specLocation"
-
             let "lineNumber-=2"
 
             noarchPath=/space/ALT/Sisyphus/noarch/RPMS.classic/python3-module-$reqName-[0123456789]*
