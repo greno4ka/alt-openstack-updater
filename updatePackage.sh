@@ -42,6 +42,7 @@ if [ $theirModuleName == "None" ]; then
     rpm-uscan
 else
     tarballUrl=$(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
+    wget $tarballUrl
 fi
 tarball=$(find . -name "*.tar.gz")
 version="$(sed -e "s/.*-\(.*\)\.tar\.gz/\1/" <<< "$tarball")"
