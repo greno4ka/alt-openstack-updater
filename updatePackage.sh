@@ -57,10 +57,10 @@ fi
 # 3. Download tarball
 
 echo "*** Downloading source tarball ***"
-tarballUrl=$(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
 if [ -f "$moduleName.watch" ]; then
     echo "Watch file exist!"
 else
+    tarballUrl=$(grep "^$theirModuleName " ../scrapped.list | cut -d" " -f4)
     echo "version=3" > $moduleName.watch
     echo $tarballUrl | sed -E 's/[0-9]+(\.[0-9]+)*/(\\d[[:digit:].]+)/' >> $moduleName.watch
 fi
