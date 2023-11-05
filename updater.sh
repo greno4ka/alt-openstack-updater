@@ -8,8 +8,7 @@ release=$1
 rsync -aP basalt-home:/space/ALT/Sisyphus/files/list/src.list .
 
 touch scrapped.list
-#for section in "library-projects" "service-projects" "service-client-projects"; do
-for section in "library-projects"; do
+for section in "library-projects" "service-projects" "service-client-projects"; do
     ./scrap.py $release $section >> scrapped.list
 done
 
