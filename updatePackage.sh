@@ -32,7 +32,7 @@ fi
 
 moduleDir=$(pwd)/"$sisyphusName"
 pushd "$moduleDir" > /dev/null
-specFileLocation=$(find $moduleDir -name "*.spec")
+specLocation=$(find $moduleDir -name "*.spec")
 
 # 8<----------------------------------------------------------------------------
 # 2. Download tarball
