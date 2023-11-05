@@ -1,7 +1,6 @@
 #!/bin/bash -u
 
 # 1. Clone git repo
-# 2. ? Rename spec file
 # 3. Download tarball
 # 4. Generate changelog
 # 5. Make upgrade
@@ -34,24 +33,9 @@ else
     fi
 fi
 
-# 8<----------------------------------------------------------------------------
-# 2. Rename spec file
-
 moduleDir=$(pwd)/"$sisyphusName"
 pushd "$moduleDir" > /dev/null
-moduleName=$(echo "$moduleDir" | rev | cut -f1 -d"/" | rev | sed -e "s/python3\?-module-\|openstack-//")
-cuttedModuleName=$(sed "s/^os[-_]//" <<< $moduleName)
-
-# Renaming of spec file before update if nessesary
-specRenamed=0
 specFileLocation=$(find $moduleDir -name "*.spec")
-correctSpecLocation="$(dirname $specFileLocation)/$moduleName.spec"
-if [ ! $specFileLocation == $correctSpecLocation ]; then
-    echo "*** Renaming spec file ***"
-    git mv $specFileLocation $correctSpecLocation
-    git commit -am "Renamed spec file"
-    specRenamed=1
-fi
 
 # 8<----------------------------------------------------------------------------
 # 3. Download tarball
@@ -90,16 +74,16 @@ gear-uupdate -q "$tarball" "$version" --changelog "$changelogEntry"
 
 echo "*** Updating build requires ***"
 # split BR each on own line
-sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:space:]]*>=?[[:space:]]*?[0-9.]+)?)/BuildRequires: \2/g' "$correctSpecLocation"
-sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$correctSpecLocation"
+sed -i -E '/^BuildRequires:/s/(BuildRequires:[[:space:]]*)?([^[:space:]]+([[:space:]]*>=?[[:space:]]*?[0-9.]+)?)/BuildRequires: \2/g' "$specLocation"
+sed -i -E 's/[[:space:]]+(BuildRequires:)/\n\1/g' "$specLocation"
 
 # Verify BuildRequires
 
 # Remove absolutely useless BuildRequires
-sed -i -E '/^BuildRequires: python3-devel/d' "$correctSpecLocation"
-sed -i -E '/^BuildRequires: python3-dev/d' "$correctSpecLocation"
+sed -i -E '/^BuildRequires: python3-devel/d' "$specLocation"
+sed -i -E '/^BuildRequires: python3-dev/d' "$specLocation"
 
-grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; do
+grep "BuildRequires:" "$specLocation" | while read buildRequirementLine; do
     buildRequirement=$(echo $buildRequirementLine | cut -d" " -f2)
     if [ $(echo "$buildRequirement" | grep -c python3-module-) ]; then
         noarchPath=/space/ALT/Sisyphus/noarch/RPMS.classic/$buildRequirement-[0123456789]*
@@ -111,7 +95,7 @@ grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; 
 # Rewrite build requires in normal mode (off)
         [ -z "x" ] && \
         [ -n "$buildReqNormalized" ] && \
-            sed -i -E "s/$buildRequirement([[:space:]]|$)/$buildReqNormalized\1/" "$correctSpecLocation"
+            sed -i -E "s/$buildRequirement([[:space:]]|$)/$buildReqNormalized\1/" "$specLocation"
 
         moduleRequirement=$(echo $buildReqNormalized | sed -E 's/python3\((.*)\)/\1/')
 # Filter useless extra build requires
@@ -119,12 +103,12 @@ grep "BuildRequires:" "$correctSpecLocation" | while read buildRequirementLine; 
             xargs grep "import.* $moduleRequirement\|from.* $moduleRequirement.*import" | wc -l) == 0 ] \
         && [ $(find . -name '*.ini' -o -name 'conf.py' -o -name 'setup.py' | \
         xargs grep "$moduleRequirement" | wc -l) == 0 ] && \
-            sed -i "/$buildRequirementLine/d" "$correctSpecLocation"
+            sed -i "/$buildRequirementLine/d" "$specLocation"
     fi
 done
 
 # Bring back setuptools and wheel, as they are nessesary for new macros
-sed -i "s,BuildRequires(pre): rpm-build-python3,BuildRequires(pre): rpm-build-python3\nBuildRequires: python3-module-setuptools\nBuildRequires: python3-module-wheel," $correctSpecLocation
+sed -i "s,BuildRequires(pre): rpm-build-python3,BuildRequires(pre): rpm-build-python3\nBuildRequires: python3-module-setuptools\nBuildRequires: python3-module-wheel," $specLocation
 
 # git repo of modules always contains . .gear .git and our destination
 sourceDir="$(find -maxdepth 1 -type d | grep -v ".git" | grep -v ".gear" | grep "/")"
@@ -133,7 +117,7 @@ cat "$sourceDir/requirements.txt" "$sourceDir/test-requirements.txt" | while rea
     if [[ "$reqLine" =~ ">" ]] && [ ! $(echo $reqLine | grep -q "^#" && echo $?) ]; then
         reqName=$(tr [:upper:] [:lower:] <<< \
             $(echo "$reqLine" | cut -d"!" -f1 | cut -d">" -f1))
-        if [ ! $(grep -q python3-module-$reqName "$correctSpecLocation" && echo $?) ]; then
+        if [ ! $(grep -q python3-module-$reqName "$specLocation" && echo $?) ]; then
         # Count line number to input new build requirement
             brStarted=""
             lineNumber=0
@@ -153,7 +137,7 @@ cat "$sourceDir/requirements.txt" "$sourceDir/test-requirements.txt" | while rea
 
             let "lineNumber+=1"
             echo ${lineNumber}
-            done < "$correctSpecLocation"
+            done < "$specLocation"
 
             let "lineNumber-=2"
 
@@ -161,11 +145,11 @@ cat "$sourceDir/requirements.txt" "$sourceDir/test-requirements.txt" | while rea
             x86_64Path=/space/ALT/Sisyphus/x86_64/RPMS.classic/python3-module-$reqName-[0123456789]*
 
             if [ -f $noarchPath -o -f $x86_64Path ]; then
-                sed -Ei "${lineNumber}aBuildRequires: python3-module-$reqName" "$correctSpecLocation"
+                sed -Ei "${lineNumber}aBuildRequires: python3-module-$reqName" "$specLocation"
             fi
         fi
         reqVersion=$(sed -nE "s/$reqName[^ ;]*>=?([0-9.]+).*/\1/p" <<< $reqLine)
-        [ -z $reqVersion ] || sed -Ei "s/(python3-module-$reqName)([[:space:]]|$).*/\1 >= $reqVersion/" "$correctSpecLocation"
+        [ -z $reqVersion ] || sed -Ei "s/(python3-module-$reqName)([[:space:]]|$).*/\1 >= $reqVersion/" "$specLocation"
     fi
 done
 
